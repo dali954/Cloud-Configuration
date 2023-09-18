@@ -1,11 +1,3 @@
-if (BRANCH_NAME == "develop") {
-    properties(
-        [
-            pipelineTriggers([cron('0 11 * * *')])
-        ]
-    )
-}
-
 node {
     
     stage('checkout'){
@@ -30,12 +22,11 @@ node {
                     archiveArtifacts artifacts: '**/target/*.jar', fingerprint: true                
                     }
       script{
-         if(env.BRANCH_NAME == 'develop') {
              stage('docker build'){
                 sh "cp ./src/main/docker/Dockerfile ./target/ "
                 cloudconfig_version = pom.version
                 docker.withRegistry('https://nexus-numeryx.my.p4d.click', 'docker-login') {
-                  def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-test:"+cloudconfig_version
+                  def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/cloud-configuration-test:"+cloudconfig_version
                   def dockerImage = docker.build(dockerImageTag, './target/')
                   dockerImage.push()
                     }
@@ -45,120 +36,14 @@ node {
                        sh "ssh root@10.30.2.49 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh"
                   }}    
          }
-         else if(env.BRANCH_NAME == 'process-release') {
-           def cloudconfigReleaseVersion = input(
-                              id: 'userInput', message: 'Enter new release cloudconfig-Service version :',
-                              parameters: [
-                                      string(defaultValue: '',
-                                              description: 'cloudconfig Release version',
-                                              name: 'cloudconfig Release Version'),
-                              ])
-           echo("New release version is: ${cloudconfigReleaseVersion}")
-           def cloudconfigDevelopVersion = input(
-                              id: 'userInput', message: 'Enter new develop cloudconfig-Service version :',
-                              parameters: [
-                                      string(defaultValue: '',
-                                              description: 'cloudconfig Develop version',
-                                              name: 'cloudconfig Develop Version'),
-                              ])
-            echo("New development version is: ${cloudconfigDevelopVersion}")       
-            if(cloudconfigDevelopVersion == ''){
-                         throw new Exception("Version should not be null")
-            } 
-            if(cloudconfigReleaseVersion == ''){
-                         throw new Exception("Version should not be null")
-            }else if (cloudconfigDevelopVersion == cloudconfigReleaseVersion) {
-                         throw new Exception("Release version should be different from snapshot version")
-            }else if (cloudconfigDevelopVersion == cloudconfig_version) {
-                         throw new Exception("SNAPSHOT version already exists")
-            }
-         
-            stage ("Commit new versions"){
-                sshagent (credentials: ['gitlab-ssh-key']) {
-                    env.GIT_SSH_COMMAND = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no"
-                        sh """
-                          mvn release:clean release:prepare -DdryRun=true release:perform -DreleaseVersion=${cloudconfigReleaseVersion}
-                          git config --global user.email ${env.JENKINS_USEREMAIL_GITLAB}
-                          git config --global user.name ${env.JENKINS_USERNAME_GITLAB}
-                          git checkout -b release
-                          git branch
-                          git reset --hard HEAD
-                          mvn versions:set -DnextRelease=true -DnewVersion=${cloudconfigReleaseVersion}
-                          git add .
-                          git commit -m "New release version ${cloudconfigReleaseVersion}"
-                          git push origin release
-                          git checkout develop
-                          git branch
-                          git reset --hard HEAD
-                          git pull origin develop
-                          mvn versions:set -DnextRelease=true -DnewVersion=${cloudconfigDevelopVersion}
-                          git add .
-                          git commit -m "New develop version ${cloudconfigDevelopVersion}"
-                          git push origin develop
-                          git push origin --delete process-release
-                          git branch -D release
-                     """        
-                 }
-              }
-
-         } else if(env.BRANCH_NAME == 'release') {
-            stage('docker build'){
-                sh "cp ./src/main/docker/Dockerfile ./target/ "
-                 cloudconfig_version = pom.version
-                docker.withRegistry('https://nexus-numeryx.my.p4d.click', 'docker-login') {
-                  def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-test:"+cloudconfig_version
-                  def dockerImage = docker.build(dockerImageTag, './target/')
-                  dockerImage.push()
-                    }
-               }
-           stage('integration') {
-               sshagent (credentials: ['ssh-cluster-app-bs-release']) {
-                       sh "ssh root@10.30.2.49 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh"
-                 }}   
-           
-        }
-         else  if(env.BRANCH_NAME == 'main'){
-            cloudconfig_version = pom.version.replace("-RELEASE","-STABLE")     
-           stage ("tag new version"){
-              sshagent (credentials: ['gitlab-ssh-key']) {
-                    env.GIT_SSH_COMMAND = "ssh -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no"
-                        sh """
-                          git config --global user.email ${env.JENKINS_USEREMAIL_GITLAB}
-                          git config --global user.name ${env.JENKINS_USERNAME_GITLAB}
-                          git checkout main
-                          git reset --hard HEAD
-                          git pull origin main
-                          mvn versions:set -DnextRelease=true -DnewVersion=${cloudconfig_version}
-                          git add .
-                          git commit -m "new version ${cloudconfig_version}"
-                          git push origin main
-                          git tag ${cloudconfig_version}
-                          git push origin ${cloudconfig_version} 
-                     """ 
-               }
-              }
-            stage('docker build'){
-               sh "cp ./src/main/docker/Dockerfile ./target/ "
-               docker.withRegistry('https://nexus-numeryx.my.p4d.click', 'docker-login') {
-                 def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-test:"+cloudconfig_version
-                 def dockerImage = docker.build(dockerImageTag, './target/')
-                 dockerImage.push()
-              }
-                 
-           }    
-           stage('integration') {
-               sshagent (credentials: ['ssh-cluster-app-bs-release']) {
-                    sh "ssh root@10.30.2.49 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh"
-                 }
+        
                  }   
-          } 
 
-         }}
-            }
+            
          finally {
                 sh "chmod -R 777 ."
             }
   }
 
   
-}
+}}
