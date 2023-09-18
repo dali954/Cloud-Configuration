@@ -1,0 +1,30 @@
+
+server:
+  address: 0.0.0.0
+  port: 8888
+
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: http://192.168.195.128/gitlab-instance-41645522/yml-repository.git
+          username: 'root'
+          password: 'Dali_2642___'
+          clone-on-start: true
+          default-label: main
+          search-paths:
+            - "{application}"
+
+
+  security:
+    user:
+      name: root
+      password: root
+
+# encrypt:
+#   keystore:
+#     location: classpath:key/config-server.jks
+#     alias: config-server
+#     password: numeryx2020
+#     secret: numeryx2020
