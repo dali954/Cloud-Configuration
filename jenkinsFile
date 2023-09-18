@@ -35,14 +35,14 @@ node {
                 sh "cp ./src/main/docker/Dockerfile ./target/ "
                 cloudconfig_version = pom.version
                 docker.withRegistry('https://nexus-numeryx.my.p4d.click', 'docker-login') {
-                  def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-mac:"+cloudconfig_version
+                  def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-test:"+cloudconfig_version
                   def dockerImage = docker.build(dockerImageTag, './target/')
                   dockerImage.push()
                     }
                 }     
             stage('integration') {
                sshagent (credentials: ['ssh-cluster-app-bs-dev']) {
-                       sh "ssh root@10.30.3.228 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh cloudconfig_version CLOUDCONFIG_VERSION=${cloudconfig_version} ${cloudconfig_version}"
+                       sh "ssh root@10.30.2.49 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh"
                   }}    
          }
          else if(env.BRANCH_NAME == 'process-release') {
@@ -106,14 +106,14 @@ node {
                 sh "cp ./src/main/docker/Dockerfile ./target/ "
                  cloudconfig_version = pom.version
                 docker.withRegistry('https://nexus-numeryx.my.p4d.click', 'docker-login') {
-                  def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-mac:"+cloudconfig_version
+                  def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-test:"+cloudconfig_version
                   def dockerImage = docker.build(dockerImageTag, './target/')
                   dockerImage.push()
                     }
                }
            stage('integration') {
                sshagent (credentials: ['ssh-cluster-app-bs-release']) {
-                       sh "ssh root@10.30.3.202 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh cloudconfig_version CLOUDCONFIG_VERSION=${cloudconfig_version} ${cloudconfig_version}"
+                       sh "ssh root@10.30.2.49 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh"
                  }}   
            
         }
@@ -140,7 +140,7 @@ node {
             stage('docker build'){
                sh "cp ./src/main/docker/Dockerfile ./target/ "
                docker.withRegistry('https://nexus-numeryx.my.p4d.click', 'docker-login') {
-                 def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-mac:"+cloudconfig_version
+                 def dockerImageTag =  "nexus-numeryx.my.p4d.click/business-suite/mac/spring-cloud-configuration-test:"+cloudconfig_version
                  def dockerImage = docker.build(dockerImageTag, './target/')
                  dockerImage.push()
               }
@@ -148,7 +148,7 @@ node {
            }    
            stage('integration') {
                sshagent (credentials: ['ssh-cluster-app-bs-release']) {
-                    sh "ssh root@10.30.3.202 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh cloudconfig_version CLOUDCONFIG_VERSION=${cloudconfig_version} ${cloudconfig_version}"
+                    sh "ssh root@10.30.2.49 -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o CheckHostIP=no sh /root/deploy.sh"
                  }
                  }   
           } 
